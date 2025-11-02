@@ -7,20 +7,24 @@ import { tmpdir } from "os"
 import { EventEmitter } from "events"
 
 import { getFFmpegConfig, checkFFmpegAvailability } from "./speechConfig"
-import { AudioConverter } from "./AudioConverter"
 import { TranscriptionClient } from "./TranscriptionClient"
 import { ChunkProcessor } from "./ChunkProcessor"
 import { StreamingManager } from "./StreamingManager"
 import { SpeechState, RecordingMode, StreamingConfig, ProgressiveResult, VolumeSample } from "./types"
+import { ProviderSettingsManager } from "../../core/config/ProviderSettingsManager"
+
+// Re-export types for external use
+export type { SpeechState, RecordingMode, StreamingConfig, ProgressiveResult, VolumeSample } from "./types"
 
 /**
  * SpeechService - Orchestrates speech-to-text functionality
  *
  * Architecture:
- * - AudioConverter: Handles WebM → MP3 conversion
- * - TranscriptionClient: Manages OpenAI Whisper API calls
+ * - TranscriptionClient: Manages OpenAI Whisper API calls (WebM format works directly!)
  * - ChunkProcessor: Event-driven FFmpeg chunk detection (eliminates race conditions)
  * - StreamingManager: Text deduplication and session management
+ *
+ * Note: WebM files with Opus codec are uploaded directly to OpenAI - no conversion needed!
  */
 export class SpeechService extends EventEmitter {
 	private static instance: SpeechService | null = null
@@ -28,8 +32,7 @@ export class SpeechService extends EventEmitter {
 	private mode: RecordingMode = RecordingMode.BATCH
 
 	// Module instances
-	private audioConverter: AudioConverter
-	private transcriptionClient: TranscriptionClient
+	private transcriptionClient: TranscriptionClient | null = null
 	private chunkProcessor: ChunkProcessor
 	private streamingManager: StreamingManager
 
@@ -51,9 +54,7 @@ export class SpeechService extends EventEmitter {
 	private constructor() {
 		super()
 
-		// Initialize modules
-		this.audioConverter = new AudioConverter()
-		this.transcriptionClient = new TranscriptionClient()
+		// Initialize modules (transcriptionClient will be initialized later)
 		this.chunkProcessor = new ChunkProcessor()
 		this.streamingManager = new StreamingManager()
 
@@ -65,24 +66,36 @@ export class SpeechService extends EventEmitter {
 	 * Set up event handlers for chunk processor
 	 */
 	private setupChunkProcessorEvents(): void {
+		console.log("[SpeechService] 🔧 Setting up chunk processor event handlers")
+
 		this.chunkProcessor.on("chunkReady", async (chunkPath: string) => {
+			console.log(`[SpeechService] 🎯 CHUNK READY EVENT RECEIVED: ${chunkPath}`)
 			await this.handleChunkReady(chunkPath)
 		})
 
 		this.chunkProcessor.on("chunkError", (error: Error) => {
-			console.error("[SpeechService] Chunk processing error:", error)
+			console.error("[SpeechService] ❌ Chunk processing error:", error)
 			this.emit("streamingError", error.message)
 		})
 
 		this.chunkProcessor.on("complete", () => {
-			console.log("[SpeechService] FFmpeg process completed")
+			console.log("[SpeechService] ✅ FFmpeg process completed")
 		})
+
+		console.log("[SpeechService] ✓ Chunk processor event handlers registered")
 	}
 
-	public static getInstance(): SpeechService {
+	public static getInstance(providerSettingsManager?: ProviderSettingsManager): SpeechService {
 		if (!SpeechService.instance) {
 			SpeechService.instance = new SpeechService()
 		}
+
+		// Initialize transcription client if we have a provider settings manager and it's not initialized yet
+		if (providerSettingsManager && !SpeechService.instance.transcriptionClient) {
+			SpeechService.instance.transcriptionClient = new TranscriptionClient(providerSettingsManager)
+			console.log("[SpeechService] ✅ TranscriptionClient initialized with ProviderSettingsManager")
+		}
+
 		return SpeechService.instance
 	}
 
@@ -322,6 +335,18 @@ export class SpeechService extends EventEmitter {
 		try {
 			this.state = SpeechState.TRANSCRIBING
 			console.log("[SpeechService] ✓ State set to TRANSCRIBING")
+
+			// DEBUG: Check what files exist in streaming directory
+			if (this.streamingDir) {
+				try {
+					const files = await fs.readdir(this.streamingDir)
+					console.log(`[SpeechService] 📁 Files in streaming dir: ${files.length} files`)
+					files.forEach((f) => console.log(`[SpeechService]   - ${f}`))
+				} catch (err) {
+					console.error("[SpeechService] ❌ Error reading streaming dir:", err)
+				}
+			}
+
 			this.chunkProcessor.stopWatching()
 			console.log("[SpeechService] ✓ Chunk processor stopped")
 
@@ -402,24 +427,18 @@ export class SpeechService extends EventEmitter {
 
 	/**
 	 * Transcribe audio file using modular transcription client
-	 * Converts WebM to MP3 first for better OpenAI compatibility
+	 * WebM files work directly with OpenAI Whisper API - no conversion needed!
 	 */
 	private async transcribeFile(filePath: string, language?: string): Promise<string> {
-		// Convert WebM to MP3
-		const mp3Path = await this.audioConverter.convertToMp3(filePath)
-
-		try {
-			// Transcribe using client
-			const text = await this.transcriptionClient.transcribe(mp3Path, { language })
-			return text
-		} finally {
-			// Clean up MP3 file
-			try {
-				await fs.unlink(mp3Path)
-			} catch (error) {
-				// Ignore cleanup errors
-			}
+		if (!this.transcriptionClient) {
+			throw new Error(
+				"TranscriptionClient not initialized. Please ensure ProviderSettingsManager is passed to SpeechService.getInstance()",
+			)
 		}
+
+		// Upload WebM directly - OpenAI Whisper API accepts WebM with Opus codec
+		const text = await this.transcriptionClient.transcribe(filePath, { language })
+		return text
 	}
 
 	/**
@@ -524,13 +543,16 @@ export class SpeechService extends EventEmitter {
 	 * This is called when FFmpeg has fully written and closed a chunk file
 	 */
 	private async handleChunkReady(chunkPath: string): Promise<void> {
+		console.log(`[SpeechService] 📥 HANDLE CHUNK READY CALLED: ${chunkPath}`)
 		const chunkId = this.chunkCounter++
 		console.log(`[SpeechService] 🔄 Processing chunk ${chunkId}: ${path.basename(chunkPath)}`)
+		console.log(`[SpeechService] 📊 Current state: ${this.state}, mode: ${this.mode}`)
 
 		try {
 			// Transcribe chunk
+			console.log(`[SpeechService] 🎤 Starting transcription for chunk ${chunkId}...`)
 			const rawText = await this.transcribeFile(chunkPath, this.streamingConfig.language)
-			console.log(`[SpeechService] ✓ Transcribed chunk ${chunkId}: ${rawText.substring(0, 50)}...`)
+			console.log(`[SpeechService] ✅ Transcribed chunk ${chunkId}: "${rawText.substring(0, 50)}..."`)
 
 			// Deduplicate and add to session
 			const deduplicatedText = this.streamingManager.addChunkText(chunkId, rawText)

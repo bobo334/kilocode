@@ -1711,6 +1711,9 @@ importers:
       diff-match-patch:
         specifier: ^1.0.5
         version: 1.0.5
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.5.0
       exceljs:
         specifier: ^4.4.0
         version: 4.4.0
@@ -1750,6 +1753,9 @@ importers:
       isbinaryfile:
         specifier: ^5.0.2
         version: 5.0.4
+      js-tiktoken:
+        specifier: ^1.0.15
+        version: 1.0.21
       jsdom:
         specifier: ^26.0.0
         version: 26.1.0
@@ -1813,6 +1819,9 @@ importers:
       puppeteer-core:
         specifier: ^23.4.0
         version: 23.11.1
+      quick-lru:
+        specifier: ^7.0.0
+        version: 7.3.0
       reconnecting-eventsource:
         specifier: ^1.6.4
         version: 1.6.4
@@ -1837,6 +1846,12 @@ importers:
       sound-play:
         specifier: ^1.1.0
         version: 1.1.0
+      sqlite:
+        specifier: ^5.1.1
+        version: 5.1.1
+      sqlite3:
+        specifier: ^5.1.7
+        version: 5.1.7
       stream-json:
         specifier: ^1.8.0
         version: 1.9.1
@@ -13094,6 +13109,9 @@ packages:
     resolution: {integrity: sha512-pbKLsbCfi7kriM3s1J4DDCo7jQkI58zPLHi0heXPzPlj0hjUsm+FesPUbE0DSbIVIK503A36aUBoCN7eMFedkA==}
     engines: {node: '>=1.0.0'}
 
+  js-tiktoken@1.0.21:
+    resolution: {integrity: sha512-biOj/6M5qdgx5TKjDnFT1ymSpM5tbd3ylwDtrQvFQSu0Z7bBYko2dF+W/aUkXUPuk6IVpRxk/3Q2sHOzGlS36g==}
+
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
@@ -16085,6 +16103,10 @@ packages:
     resolution: {integrity: sha512-WuyALRjWPDGtt/wzJiadO5AXY+8hZ80hVpe6MyivgraREW751X3SbhRvG3eLKOYN+8VEvqLcf3wdnt44Z4S4SA==}
     engines: {node: '>=10'}
 
+  quick-lru@7.3.0:
+    resolution: {integrity: sha512-k9lSsjl36EJdK7I06v7APZCbyGT2vMTsYSRX1Q2nbYmnkBqgUhRkAuzH08Ciotteu/PLJmIF2+tti7o3C/ts2g==}
+    engines: {node: '>=18'}
+
   randombytes@2.1.0:
     resolution: {integrity: sha512-vYl3iOX+4CKUWuxGi9Ukhie6fsqXqS9FE2Zaic4tNFD2N2QQaXOMFbuKK4QmDHC0JO6B1Zp41J0LpT0oR68amQ==}
 
@@ -17248,6 +17270,9 @@ packages:
 
   sqlite3@5.1.7:
     resolution: {integrity: sha512-GGIyOiFaG+TUra3JIfkI/zGP8yZYLPQ0pl1bH+ODjiX57sPhrLU5sQJn1y9bDKZUFYkX1crlrPfSYt0BKKdkog==}
+
+  sqlite@5.1.1:
+    resolution: {integrity: sha512-oBkezXa2hnkfuJwUo44Hl9hS3er+YFtueifoajrgidvqsJRQFpc5fKoAkAor1O5ZnLoa28GBScfHXs8j0K358Q==}
 
   srcset@4.0.0:
     resolution: {integrity: sha512-wvLeHgcVHKO8Sc/H/5lkGreJQVeYMm9rlmt8PuR1xE31rIuXhuzznUUqAt8MqLhB3MqJdFzlNAfpcWnxiFUcPw==}
@@ -33184,6 +33209,10 @@ snapshots:
     dependencies:
       easy-stack: 1.0.1
 
+  js-tiktoken@1.0.21:
+    dependencies:
+      base64-js: 1.5.1
+
   js-tokens@4.0.0: {}
 
   js-tokens@9.0.1: {}
@@ -36806,6 +36835,8 @@ snapshots:
 
   quick-lru@5.1.1: {}
 
+  quick-lru@7.3.0: {}
+
   randombytes@2.1.0:
     dependencies:
       safe-buffer: 5.2.1
@@ -38358,7 +38389,8 @@ snapshots:
       - bare-buffer
       - bluebird
       - supports-color
-    optional: true
+
+  sqlite@5.1.1: {}
 
   srcset@4.0.0: {}
 

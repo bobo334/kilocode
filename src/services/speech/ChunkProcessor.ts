@@ -21,6 +21,7 @@ export class ChunkProcessor extends EventEmitter implements IChunkProcessor {
 	private ffmpegProcess: ChildProcess | null = null
 	private outputDir: string = ""
 	private isWatching: boolean = false
+	private lastChunkNumber: number = -1
 
 	/**
 	 * Start watching FFmpeg stderr for chunk completion events
@@ -71,6 +72,14 @@ export class ChunkProcessor extends EventEmitter implements IChunkProcessor {
 
 		console.log("[ChunkProcessor] 🛑 Stopped watching FFmpeg stderr")
 
+		// Emit the last chunk if we have one (when recording stops, the last chunk is complete)
+		if (this.lastChunkNumber >= 0) {
+			const lastChunkName = `chunk_${String(this.lastChunkNumber).padStart(3, "0")}.webm`
+			const lastChunkPath = path.join(this.outputDir, lastChunkName)
+			console.log(`[ChunkProcessor] ✅ Emitting final chunk: ${lastChunkName}`)
+			this.emit("chunkReady", lastChunkPath)
+		}
+
 		if (this.ffmpegProcess?.stderr) {
 			this.ffmpegProcess.stderr.removeAllListeners("data")
 		}
@@ -83,54 +92,39 @@ export class ChunkProcessor extends EventEmitter implements IChunkProcessor {
 		this.ffmpegProcess = null
 		this.outputDir = ""
 		this.isWatching = false
+		this.lastChunkNumber = -1
 	}
 
 	/**
 	 * Handle FFmpeg stderr data
 	 * Parses output for chunk completion signals
+	 *
+	 * CRITICAL: FFmpeg's segment muxer does NOT output "Closing" messages!
+	 * Instead, when it opens chunk_001.webm, it means chunk_000.webm is complete.
+	 * Strategy: When we see "Opening chunk_N", emit chunkReady for chunk_(N-1)
 	 */
 	private handleStderrData(data: Buffer): void {
 		const text = data.toString()
 
-		// FFmpeg outputs different messages depending on the muxer and format
-		// For segment muxer with WebM output, we look for:
-		// 1. "Opening 'chunk_XXX.webm' for writing" - chunk file created
-		// 2. "Closing 'chunk_XXX.webm'" - chunk file closed (READY TO PROCESS)
-		// 3. "[segment @ ...] segment:'chunk_XXX.webm' count:N ended" - segment completed
+		// Pattern: Detect when FFmpeg opens a NEW chunk file
+		// Format: [segment @ 0xXXXXXXXXX] Opening '/path/to/chunk_NNN.webm' for writing
+		const openingMatch = text.match(/Opening '([^']+chunk_(\d{3})\.webm)' for writing/i)
 
-		// Pattern 1: Detect chunk file closure (most reliable signal)
-		const closingMatch = text.match(/Closing '([^']+)'/i)
-		if (closingMatch) {
-			const fileName = closingMatch[1]
-			// Extract just the filename if it's a full path
-			const chunkFileName = path.basename(fileName)
+		if (openingMatch) {
+			const fullPath = openingMatch[1]
+			const chunkNumber = parseInt(openingMatch[2], 10)
 
-			if (chunkFileName.startsWith("chunk_") && chunkFileName.endsWith(".webm")) {
-				const chunkPath = path.join(this.outputDir, chunkFileName)
-				console.log(`[ChunkProcessor] ✅ Chunk closed by FFmpeg: ${chunkFileName}`)
-				this.emit("chunkReady", chunkPath)
-				return
+			console.log(`[ChunkProcessor] 📂 Opening chunk_${String(chunkNumber).padStart(3, "0")}.webm detected`)
+
+			// When FFmpeg opens chunk_N, the previous chunk (N-1) is complete and ready
+			if (this.lastChunkNumber >= 0) {
+				const previousChunkName = `chunk_${String(this.lastChunkNumber).padStart(3, "0")}.webm`
+				const previousChunkPath = path.join(this.outputDir, previousChunkName)
+				console.log(`[ChunkProcessor] ✅ Previous chunk ready: ${previousChunkName}`)
+				this.emit("chunkReady", previousChunkPath)
 			}
-		}
 
-		// Pattern 2: Detect segment completion (alternative signal)
-		const segmentMatch = text.match(/segment:'([^']+)'.*ended/i)
-		if (segmentMatch) {
-			const fileName = segmentMatch[1]
-			const chunkFileName = path.basename(fileName)
-
-			if (chunkFileName.startsWith("chunk_") && chunkFileName.endsWith(".webm")) {
-				const chunkPath = path.join(this.outputDir, chunkFileName)
-				console.log(`[ChunkProcessor] ✅ Segment ended: ${chunkFileName}`)
-				this.emit("chunkReady", chunkPath)
-				return
-			}
-		}
-
-		// Log other stderr output for debugging (sample 1% of messages to avoid spam)
-		if (Math.random() < 0.01) {
-			const preview = text.substring(0, 100).replace(/\n/g, " ")
-			console.log(`[ChunkProcessor] 📊 FFmpeg stderr sample: ${preview}`)
+			this.lastChunkNumber = chunkNumber
 		}
 	}
 

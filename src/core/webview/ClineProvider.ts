@@ -338,7 +338,7 @@ export class ClineProvider
 	 */
 	private initializeDictationService(): void {
 		try {
-			this.speechService = SpeechService.getInstance()
+			this.speechService = SpeechService.getInstance(this.providerSettingsManager)
 			this.log("✅ SpeechService initialized - ready for speech-to-text")
 		} catch (error) {
 			this.log(`❌ Failed to initialize SpeechService: ${error}`)
