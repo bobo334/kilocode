@@ -1,18 +1,4 @@
-import type { CLIConfig, AutoApprovalConfig, CodebaseIndexConfig } from "./types.js"
-
-/**
- * Default code indexing configuration
- * Disabled by default - users must explicitly enable and configure
- */
-export const DEFAULT_CODEBASE_INDEX_CONFIG: CodebaseIndexConfig = {
-	codebaseIndexEnabled: false,
-	codebaseIndexVectorStoreProvider: "qdrant",
-	codebaseIndexQdrantUrl: "http://localhost:6333",
-	codebaseIndexEmbedderProvider: "openai",
-	codebaseIndexEmbedderBaseUrl: "",
-	codebaseIndexEmbedderModelId: "",
-	codebaseIndexBedrockRegion: "us-east-1",
-}
+import type { CLIConfig, AutoApprovalConfig } from "./types.js"
 
 /**
  * Default auto approval configuration
@@ -73,7 +59,6 @@ export const DEFAULT_CONFIG = {
 		},
 	],
 	autoApproval: DEFAULT_AUTO_APPROVAL,
-	codebaseIndexConfig: DEFAULT_CODEBASE_INDEX_CONFIG,
 	theme: "dark",
 	customThemes: {},
 } satisfies CLIConfig

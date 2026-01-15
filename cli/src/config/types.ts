@@ -10,15 +10,9 @@ import type { ProviderConfig as CoreProviderConfig, CLIConfig as CoreCLIConfig }
 // ProviderConfig with index signature for dynamic property access (backward compatibility)
 export type ProviderConfig = CoreProviderConfig & { [key: string]: unknown }
 
-// Re-export CodebaseIndexConfig from @roo-code/types
-// This ensures CLI uses the same type as the extension
-import type { CodebaseIndexConfig } from "@roo-code/types"
-export type { CodebaseIndexConfig }
-
-// CLIConfig with our enhanced ProviderConfig type and codebaseIndexConfig
+// CLIConfig with our enhanced ProviderConfig type
 export interface CLIConfig extends Omit<CoreCLIConfig, "providers"> {
 	providers: ProviderConfig[]
-	codebaseIndexConfig?: CodebaseIndexConfig
 }
 
 // Re-export all config types from core-schemas
