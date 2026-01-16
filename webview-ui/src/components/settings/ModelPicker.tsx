@@ -49,6 +49,28 @@ type ModelIdKey = keyof Pick<
 	| "apiModelId"
 >
 
+const buildModelKeywords = (modelId: string, modelInfo?: ModelInfo) => {
+	const keywords = [modelId]
+
+	if (modelInfo?.displayName) {
+		keywords.push(modelInfo.displayName)
+	}
+
+	if (modelInfo?.description) {
+		keywords.push(modelInfo.description)
+	}
+
+	const isFreeModel =
+		modelInfo?.isFree ||
+		(modelInfo?.inputPrice === 0 && modelInfo?.outputPrice === 0)
+
+	if (isFreeModel) {
+		keywords.push("free")
+	}
+
+	return keywords
+}
+
 interface ModelPickerProps {
 	defaultModelId: string
 	models: Record<string, ModelInfo> | null
@@ -209,13 +231,14 @@ export const ModelPicker = ({
 								{/* kilocode_change start: Section headers for recommended and all models */}
 								{preferredModelIds.length > 0 && (
 									<CommandGroup heading={t("settings:modelPicker.recommendedModels")}>
-										{preferredModelIds.map((model) => (
-											<CommandItem
-												key={model}
-												value={model}
-												onSelect={onSelect}
-												data-testid={`model-option-${model}`}
-												className="font-semibold">
+									{preferredModelIds.map((model) => (
+										<CommandItem
+											key={model}
+											value={model}
+											keywords={buildModelKeywords(model, models?.[model])}
+											onSelect={onSelect}
+											data-testid={`model-option-${model}`}
+											className="font-semibold">
 												<span className="truncate" title={model}>
 													{model}
 												</span>
@@ -231,12 +254,13 @@ export const ModelPicker = ({
 								)}
 								{restModelIds.length > 0 && (
 									<CommandGroup heading={t("settings:modelPicker.allModels")}>
-										{restModelIds.map((model) => (
-											<CommandItem
-												key={model}
-												value={model}
-												onSelect={onSelect}
-												data-testid={`model-option-${model}`}>
+									{restModelIds.map((model) => (
+										<CommandItem
+											key={model}
+											value={model}
+											keywords={buildModelKeywords(model, models?.[model])}
+											onSelect={onSelect}
+											data-testid={`model-option-${model}`}>
 												<span className="truncate" title={model}>
 													{model}
 												</span>

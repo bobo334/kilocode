@@ -35,7 +35,7 @@ describe("ModelPicker", () => {
 
 	const mockModels = {
 		model1: { name: "Model 1", description: "Test model 1", ...modelInfo },
-		model2: { name: "Model 2", description: "Test model 2", ...modelInfo },
+		model2: { name: "Model 2", description: "Test model 2", isFree: true, ...modelInfo },
 	}
 
 	const defaultProps = {
@@ -148,6 +148,31 @@ describe("ModelPicker", () => {
 
 		// Verify the API config was updated with the custom model ID
 		expect(mockSetApiConfigurationField).toHaveBeenCalledWith(defaultProps.modelIdKey, customModelId)
+	})
+
+	it("matches free models when searching for free", async () => {
+		await act(async () => renderModelPicker())
+
+		await act(async () => {
+			const button = screen.getByTestId("model-picker-button")
+			fireEvent.click(button)
+		})
+
+		await act(async () => {
+			vi.advanceTimersByTime(100)
+		})
+
+		await act(async () => {
+			const modelInput = screen.getByTestId("model-input")
+			fireEvent.input(modelInput, { target: { value: "free" } })
+		})
+
+		await act(async () => {
+			vi.advanceTimersByTime(100)
+		})
+
+		expect(screen.getByTestId("model-option-model2")).toBeInTheDocument()
+		expect(screen.queryByTestId("model-option-model1")).not.toBeInTheDocument()
 	})
 
 	describe("Error Message Display", () => {
