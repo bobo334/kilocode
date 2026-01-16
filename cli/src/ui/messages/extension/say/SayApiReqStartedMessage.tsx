@@ -5,23 +5,15 @@ import { parseApiReqInfo } from "../utils.js"
 import { useTheme } from "../../../../state/hooks/useTheme.js"
 
 /**
-<<<<<<< Updated upstream
  * Display API request status (streaming/completed/failed/cancelled)
-=======
- * Display API request status (only for failed/cancelled states)
->>>>>>> Stashed changes
  */
 export const SayApiReqStartedMessage: React.FC<MessageComponentProps> = ({ message }) => {
 	const theme = useTheme()
 	const apiInfo = parseApiReqInfo(message)
 
-<<<<<<< Updated upstream
 	// In-progress state
 	// NOTE: api_req_started is often sent as a non-partial placeholder before cost/usage is known.
 	// In the CLI we treat "no completion indicators" as still in progress.
-=======
-	// In-progress or completed - don't show
->>>>>>> Stashed changes
 	if (
 		message.partial ||
 		(!apiInfo?.streamingFailedMessage && !apiInfo?.cancelReason && apiInfo?.cost === undefined)
@@ -33,10 +25,7 @@ export const SayApiReqStartedMessage: React.FC<MessageComponentProps> = ({ messa
 		)
 	}
 
-<<<<<<< Updated upstream
 	// Failed state
-=======
->>>>>>> Stashed changes
 	if (apiInfo?.streamingFailedMessage) {
 		return (
 			<Box flexDirection="column" marginY={1}>
@@ -52,10 +41,7 @@ export const SayApiReqStartedMessage: React.FC<MessageComponentProps> = ({ messa
 		)
 	}
 
-<<<<<<< Updated upstream
 	// Cancelled state
-=======
->>>>>>> Stashed changes
 	if (apiInfo?.cancelReason) {
 		return (
 			<Box flexDirection="column" marginY={1}>
@@ -73,7 +59,6 @@ export const SayApiReqStartedMessage: React.FC<MessageComponentProps> = ({ messa
 		)
 	}
 
-<<<<<<< Updated upstream
 	// Completed state
 	return (
 		<Box marginY={1}>
@@ -93,7 +78,4 @@ export const SayApiReqStartedMessage: React.FC<MessageComponentProps> = ({ messa
 			)}
 		</Box>
 	)
-=======
-	return null
->>>>>>> Stashed changes
 }
