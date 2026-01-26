@@ -217,6 +217,9 @@ export class ClineProvider
 			.then((hub) => {
 				this.mcpHub = hub
 				this.mcpHub.registerClient()
+				// kilocode_change start - Set McpHub on MarketplaceManager to prevent restart loop
+				this.marketplaceManager.setMcpHub(hub)
+				// kilocode_change end
 			})
 			.catch((error) => {
 				this.log(`Failed to initialize MCP Hub: ${error}`)

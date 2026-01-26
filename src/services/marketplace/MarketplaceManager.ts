@@ -16,6 +16,7 @@ import { getGlobalRooDirectory } from "../roo-config" // kilocode_change
 
 import { RemoteConfigLoader } from "./RemoteConfigLoader"
 import { SimpleInstaller } from "./SimpleInstaller"
+import type { McpHub } from "../mcp/McpHub" // kilocode_change - Import McpHub type for programmatic update flag
 
 export interface MarketplaceItemsResponse {
 	organizationMcps: MarketplaceItem[]
@@ -34,6 +35,17 @@ export class MarketplaceManager {
 		this.configLoader = new RemoteConfigLoader()
 		this.installer = new SimpleInstaller(context, customModesManager)
 	}
+
+	// kilocode_change start - Add method to set McpHub for programmatic update flag management
+	/**
+	 * Sets the McpHub instance for programmatic update flag management.
+	 * This allows the installer to prevent unnecessary MCP server restarts
+	 * when modifying MCP settings files.
+	 */
+	setMcpHub(mcpHub: McpHub | undefined): void {
+		this.installer.setMcpHub(mcpHub)
+	}
+	// kilocode_change end
 
 	async getMarketplaceItems(): Promise<MarketplaceItemsResponse> {
 		try {

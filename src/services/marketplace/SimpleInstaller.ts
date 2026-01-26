@@ -16,6 +16,7 @@ import { ensureSettingsDirectoryExists } from "../../utils/globalContext"
 import type { CustomModesManager } from "../../core/config/CustomModesManager"
 import { getGlobalRooDirectory } from "../roo-config" // kilocode_change
 import { extractTarball } from "./tarball-utils" // kilocode_change
+import type { McpHub } from "../mcp/McpHub" // kilocode_change - Import McpHub type for programmatic update flag
 
 export interface InstallOptions extends InstallMarketplaceItemOptions {
 	target: "project" | "global"
@@ -23,10 +24,22 @@ export interface InstallOptions extends InstallMarketplaceItemOptions {
 }
 
 export class SimpleInstaller {
+	// kilocode_change start - Add mcpHub parameter to prevent restart loop when writing MCP settings
 	constructor(
 		private readonly context: vscode.ExtensionContext,
 		private readonly customModesManager?: CustomModesManager,
+		private mcpHub?: McpHub,
 	) {}
+
+	/**
+	 * Sets the McpHub instance for programmatic update flag management.
+	 * This allows the installer to prevent unnecessary MCP server restarts
+	 * when modifying MCP settings files.
+	 */
+	setMcpHub(mcpHub: McpHub | undefined): void {
+		this.mcpHub = mcpHub
+	}
+	// kilocode_change end
 
 	async installItem(item: MarketplaceItem, options: InstallOptions): Promise<{ filePath: string; line?: number }> {
 		const { target } = options
@@ -280,7 +293,14 @@ export class SimpleInstaller {
 		// Write back to file
 		await fs.mkdir(path.dirname(filePath), { recursive: true })
 		const jsonContent = JSON.stringify(existingData, null, 2)
-		await fs.writeFile(filePath, jsonContent, "utf-8")
+		// kilocode_change start - Wrap file write with programmatic update flag to prevent restart loop
+		const writeFile = async () => fs.writeFile(filePath, jsonContent, "utf-8")
+		if (this.mcpHub) {
+			await this.mcpHub.withProgrammaticUpdate(writeFile)
+		} else {
+			await writeFile()
+		}
+		// kilocode_change end
 
 		// Calculate approximate line number where the new server was added
 		let line: number | undefined
@@ -374,7 +394,14 @@ export class SimpleInstaller {
 				delete existingData.mcpServers[serverName]
 
 				// Always write back the file, even if empty
-				await fs.writeFile(filePath, JSON.stringify(existingData, null, 2), "utf-8")
+				// kilocode_change start - Wrap file write with programmatic update flag to prevent restart loop
+				const writeFile = async () => fs.writeFile(filePath, JSON.stringify(existingData, null, 2), "utf-8")
+				if (this.mcpHub) {
+					await this.mcpHub.withProgrammaticUpdate(writeFile)
+				} else {
+					await writeFile()
+				}
+				// kilocode_change end
 			}
 		} catch (error) {
 			// File doesn't exist or other error, nothing to remove

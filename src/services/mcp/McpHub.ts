@@ -2504,6 +2504,34 @@ export class McpHub {
 		}
 	}
 
+	// kilocode_change start - Add method to wrap file writes with programmatic update flag
+	/**
+	 * Executes a callback with the isProgrammaticUpdate flag set to true.
+	 * This prevents the file watcher from triggering unnecessary server restarts
+	 * when the MCP settings file is modified programmatically.
+	 *
+	 * @param callback The async function to execute while the flag is set
+	 * @returns The result of the callback
+	 */
+	async withProgrammaticUpdate<T>(callback: () => Promise<T>): Promise<T> {
+		// Clear any existing flag reset timer
+		if (this.flagResetTimer) {
+			clearTimeout(this.flagResetTimer)
+		}
+		this.isProgrammaticUpdate = true
+		try {
+			return await callback()
+		} finally {
+			// Reset flag after watcher debounce period (non-blocking)
+			// The debounce period is 500ms, so we wait 600ms to be safe
+			this.flagResetTimer = setTimeout(() => {
+				this.isProgrammaticUpdate = false
+				this.flagResetTimer = undefined
+			}, 600)
+		}
+	}
+	// kilocode_change end
+
 	/**
 	 * Handles enabling/disabling MCP globally
 	 * @param enabled Whether MCP should be enabled or disabled
