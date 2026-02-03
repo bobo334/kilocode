@@ -1,5 +1,5 @@
 import OpenAI from "openai"
-import { moonshotModels, moonshotDefaultModelId, type ModelInfo } from "@roo-code/types"
+import { moonshotModels, moonshotDefaultModelId, type ModelInfo, MOONSHOT_DEFAULT_TEMPERATURE } from "@roo-code/types"
 
 import type { ApiHandlerOptions } from "../../shared/api"
 
@@ -7,6 +7,11 @@ import type { ApiStreamUsageChunk } from "../transform/stream"
 import { getModelParams } from "../transform/model-params"
 
 import { OpenAiHandler } from "./openai"
+
+// kilocode_change start
+// Kimi K2 and K2.5 models require temperature=1 and don't support other values
+const KIMI_K2_REQUIRED_TEMPERATURE = 1.0
+// kilocode_change end
 
 export class MoonshotHandler extends OpenAiHandler {
 	constructor(options: ApiHandlerOptions) {
@@ -24,7 +29,14 @@ export class MoonshotHandler extends OpenAiHandler {
 		const id = this.options.apiModelId ?? moonshotDefaultModelId
 		const info = moonshotModels[id as keyof typeof moonshotModels] || moonshotModels[moonshotDefaultModelId]
 		const params = getModelParams({ format: "openai", modelId: id, model: info, settings: this.options })
-		return { id, info, ...params }
+
+		// kilocode_change start
+		// Kimi K2 and K2.5 models require temperature=1 - override any user-configured temperature
+		const isKimiK2Model = id.startsWith("kimi-k2")
+		const temperature = isKimiK2Model ? KIMI_K2_REQUIRED_TEMPERATURE : params.temperature
+		// kilocode_change end
+
+		return { id, info, ...params, temperature }
 	}
 
 	// Override to handle Moonshot's usage metrics, including caching.

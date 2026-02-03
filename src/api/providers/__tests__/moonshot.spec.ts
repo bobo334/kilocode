@@ -186,6 +186,58 @@ describe("MoonshotHandler", () => {
 			expect(model).toHaveProperty("temperature")
 			expect(model).toHaveProperty("maxTokens")
 		})
+
+		// kilocode_change start
+		describe("Kimi K2 temperature override", () => {
+			it("should force temperature=1 for kimi-k2 models", () => {
+				const k2Handler = new MoonshotHandler({
+					...mockOptions,
+					apiModelId: "kimi-k2-thinking",
+				})
+				const model = k2Handler.getModel()
+				expect(model.temperature).toBe(1.0)
+			})
+
+			it("should force temperature=1 for kimi-k2.5 model", () => {
+				const k25Handler = new MoonshotHandler({
+					...mockOptions,
+					apiModelId: "kimi-k2.5",
+				})
+				const model = k25Handler.getModel()
+				expect(model.temperature).toBe(1.0)
+			})
+
+			it("should override user-configured temperature for kimi-k2 models", () => {
+				const k2Handler = new MoonshotHandler({
+					...mockOptions,
+					apiModelId: "kimi-k2-thinking",
+					modelTemperature: 0.5, // User tries to set temperature to 0.5
+				})
+				const model = k2Handler.getModel()
+				expect(model.temperature).toBe(1.0) // Should still be 1.0
+			})
+
+			it("should override user-configured temperature for kimi-k2.5 model", () => {
+				const k25Handler = new MoonshotHandler({
+					...mockOptions,
+					apiModelId: "kimi-k2.5",
+					modelTemperature: 0.7, // User tries to set temperature to 0.7
+				})
+				const model = k25Handler.getModel()
+				expect(model.temperature).toBe(1.0) // Should still be 1.0
+			})
+
+			it("should not override temperature for non-K2 models", () => {
+				const nonK2Handler = new MoonshotHandler({
+					...mockOptions,
+					apiModelId: "kimi-for-coding",
+					modelTemperature: 0.5,
+				})
+				const model = nonK2Handler.getModel()
+				expect(model.temperature).toBe(0.5) // Should respect user setting
+			})
+		})
+		// kilocode_change end
 	})
 
 	describe("createMessage", () => {
