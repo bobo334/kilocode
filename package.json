@@ -37,9 +37,7 @@
 		"cli:bundle": "turbo run cli:bundle --force",
 		"cli:deps": "pnpm --filter @kilocode/cli run deps:install",
 		"cli:dev": "pnpm --filter @kilocode/cli run dev",
-		"cli:run": "pnpm --filter @kilocode/cli run start",
-		"docs:dev": "pnpm --filter kilocode-docs dev",
-		"docs:build": "pnpm --filter kilocode-docs build"
+		"cli:run": "pnpm --filter @kilocode/cli run start"
 	},
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.5.1",
