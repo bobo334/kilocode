@@ -1,5 +1,13 @@
 # kilo-code
 
+## 5.8.2
+
+### Patch Changes
+
+- [#5267](https://github.com/Kilo-Org/kilocode/pull/5267) [`1467783`](https://github.com/Kilo-Org/kilocode/commit/14677835d2a279dcf2022b4ce76394a5532e2c7b) Thanks [@maywzh](https://github.com/maywzh)! - fix: preserve extra_content for Gemini 3 thought_signature support
+
+- [#5648](https://github.com/Kilo-Org/kilocode/pull/5648) [`af395f8`](https://github.com/Kilo-Org/kilocode/commit/af395f8e55674f13a46b17a90b4d458aef4f27bd) Thanks [@DDU1222](https://github.com/DDU1222)! - Feature: add new provider AIHubmix
+
 ## 5.8.1
 
 ### Patch Changes
